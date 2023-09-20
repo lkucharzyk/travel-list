@@ -20,6 +20,10 @@ export default function App() {
     );
   }
 
+  function clearItems() {
+    setItems([]);
+  }
+
   return (
     <div className="App">
       <Logo />
@@ -28,8 +32,9 @@ export default function App() {
         items={items}
         onDeleteItem={handleDeleteItem}
         onChangeItem={handleChangeItem}
+        onClearItems={clearItems}
       />
-      <Stats />
+      <Stats items={items} />
     </div>
   );
 }
@@ -82,11 +87,31 @@ function Form({ onAddItems }) {
   );
 }
 
-function PackingList({ items, onDeleteItem, onChangeItem }) {
+function PackingList({ items, onDeleteItem, onChangeItem, onClearItems }) {
+  const [sortBy, setSortBy] = useState("input");
+
+  let sortedItems;
+
+  if (sortBy === "input") {
+    sortedItems = items;
+  } else if (setSortBy === "description") {
+    sortedItems = items
+      .slice()
+      .sort((a, b) => a.description.localeCompare(b.description));
+  } else {
+    sortedItems = items
+      .slice()
+      .sort((a, b) => Number(a.packed) - Number(b.packed));
+  }
+
+  function changeSortBy(e) {
+    setSortBy(e.target.value);
+  }
+
   return (
     <div className="list">
       <ul>
-        {items.map((item) => (
+        {sortedItems.map((item) => (
           <ListItem
             key={item.id}
             item={item}
@@ -95,6 +120,14 @@ function PackingList({ items, onDeleteItem, onChangeItem }) {
           />
         ))}
       </ul>
+      <div className="actions">
+        <select value={sortBy} onChange={(e) => changeSortBy(e)}>
+          <option value="input">Sort by input order</option>
+          <option value="description">Sort by description</option>
+          <option value="packed">Sort by packed status</option>
+        </select>
+        <button onClick={onClearItems}>Clear list</button>
+      </div>
     </div>
   );
 }
@@ -115,10 +148,16 @@ function ListItem({ item, onDeleteItem, onChangeItem }) {
   );
 }
 
-function Stats() {
+function Stats({ items }) {
+  const itemsCount = items.length;
+  const packed =
+    (items.filter((item) => item.packed).length / itemsCount) * 100;
   return (
     <footer className="stats">
-      <em>You have X items on your list, and you already pack X</em>
+      <em>
+        You have {itemsCount} items on your list, and you already pack{" "}
+        {packed.toFixed(2)} % of them
+      </em>
     </footer>
   );
 }
